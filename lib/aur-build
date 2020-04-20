@@ -166,6 +166,7 @@ fi
 # Defaults to /usr/share/devtools/makepkg-<arch>.conf
 if [[ -v makepkg_conf ]]; then
     chroot_args+=(--makepkg-conf "$makepkg_conf")
+    makepkg_args+=(--config "$makepkg_conf")
 fi
 
 # Set pacman and makepkg commands (#713)
