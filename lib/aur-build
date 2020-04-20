@@ -168,15 +168,16 @@ if [[ -v makepkg_conf ]]; then
     chroot_args+=(--makepkg-conf "$makepkg_conf")
 fi
 
-# Assign environment variables (#443)
-: "${db_name=$AUR_REPO}"
-: "${db_root=$AUR_DBROOT}"
+# Set pacman and makepkg commands (#713)
+{ command -v -- "${makepkg_cmd:=makepkg}"
+  command -v -- "${pacman_cmd:=pacman}"
+} >/dev/null
 
 # Automatically choose repository root and name based on pacman
 # configuration and user environment.
-case $db_name in
+case ${db_name=$AUR_REPO} in
     "")
-        case $db_root in
+        case ${db_root=$AUR_DBROOT} in
             "") db_path=$(aur repo "${conf_args[@]}" --path)
                 db_name=$(basename "$db_path" .db)
                 db_root=$(dirname "$db_path")
@@ -185,7 +186,7 @@ case $db_name in
                 exit 1 ;;
         esac ;;
     *)
-        case $db_root in
+        case ${db_root=$AUR_DBROOT} in
             "") db_path=$(aur repo "${conf_args[@]}" --path -d "$db_name")
                 db_root=$(dirname "$db_path")
                 ;;
@@ -257,7 +258,7 @@ while IFS= read -ru "$fd" path; do
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
         # Ignore architecture inside pkgver() function (#536)
-        makepkg -od --ignorearch
+        "$makepkg_cmd" -od --ignorearch
     fi
 
     if (( ! overwrite )); then
@@ -265,7 +266,7 @@ while IFS= read -ru "$fd" path; do
 
         while IFS= read -r candidate_pkg; do
             [[ -f $candidate_pkg ]] && exists+=("$candidate_pkg")
-        done < <(PKGDEST="$db_root" makepkg --packagelist)
+        done < <(PKGDEST="$db_root" "$makepkg_cmd" --packagelist)
 
         # Preserve the exit status from makepkg --packagelist (#671)
         wait $!
@@ -283,8 +284,8 @@ while IFS= read -ru "$fd" path; do
         env PKGDEST="$var_tmp" aur chroot "${chroot_args[@]}" --no-prepare \
             -- "${makechrootpkg_args[@]}" -- "${makechrootpkg_makepkg_args[@]}"
     else
-        printf '%s\n' >&2 "Running makepkg ${makepkg_args[*]}"
-        env PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"
+        printf '%s\n' >&2 "Running $makepkg_cmd ${makepkg_args[*]}"
+        env PKGDEST="$var_tmp" "$makepkg_cmd" "${makepkg_args[@]}"
     fi
 
     cd_safe "$var_tmp"
@@ -322,10 +323,10 @@ while IFS= read -ru "$fd" path; do
     if (( chroot )) || (( no_sync )); then
         continue
     else
-        replaces=$(grep -Fxf <(db_replaces "$db_path") <(pacman -Qq) | paste -s -d, -)
+        replaces=$(grep -Fxf <(db_replaces "$db_path") <("$pacman_cmd" -Qq) | paste -s -d, -)
 
-        sudo pacman -Fy  --config="$tmp"/custom.conf
-        sudo pacman -Syu --config="$tmp"/custom.conf --ignore="$replaces" --noconfirm
+        sudo "$pacman_cmd" -Fy  --config="$tmp"/custom.conf
+        sudo "$pacman_cmd" -Syu --config="$tmp"/custom.conf --ignore="$replaces" --noconfirm
     fi
 done
 

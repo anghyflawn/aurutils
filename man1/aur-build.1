@@ -85,6 +85,9 @@ options.
 .B \-\-pacman\-conf
 .
 .TP
+.B \-\-makepkg\-conf
+.
+.TP
 .BI \-\-results= file
 Write absolute paths of successfully built packages to
 .IR file .
@@ -260,6 +263,34 @@ may be set in
 .BR makepkg.conf (5),
 it is then ignored for
 .BR repo\-add .
+.
+.TP
+.B MAKEPKG
+The command to build packages on the host system. The
+.B \-\-packagelist
+.BR makepkg (8)
+option must be supported by this command, as well as any optional
+arguments in the
+.B "makepkg options"
+section. If the variable is not set or empty,
+.B aur\-build
+will fall back to
+.BR makepkg .
+.
+.TP
+.B PACMAN
+The command to update the local repository. The
+.BR \-Qq ,
+.BR \-Fy ,
+.BR \-Syu ,
+.BR \-\-ignore ,
+and
+.B \-\-config
+.BR pacman (8)
+options must be supported by this command. If the variable is not set or empty,
+.B aur\-build
+will fall back to
+.BR pacman .
 .
 .TP
 .B TMPDIR
