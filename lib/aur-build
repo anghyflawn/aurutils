@@ -182,12 +182,15 @@ case $db_name in
     "")
         case $db_root in
             "") db_path=$(aur repo "${conf_args[@]}" --path)
-                db_name=$(basename "$db_path" .db)
                 db_root=$(dirname "$db_path")
                 ;;
              *) error '%s: root specified without database name' "$argv0"
                 exit 1 ;;
         esac ;;
+
+        # Strip archive file extension (tar.gz, #714)
+        db_name=$(basename "$db_path")
+        db_name=${db_name%.db*}
     *)
         case $db_root in
             "") db_path=$(aur repo "${conf_args[@]}" --path -d "$db_name")
